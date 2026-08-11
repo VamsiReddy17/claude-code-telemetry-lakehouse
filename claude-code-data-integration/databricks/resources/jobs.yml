@@ -1,0 +1,80 @@
+resources:
+  jobs:
+    bronze_ingest:
+      name: claude-code-bronze-ingest
+      max_concurrent_runs: 1
+      trigger:
+        periodic:
+          interval: 5
+          unit: MINUTES
+      job_clusters:
+        - job_cluster_key: ingest_cluster
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 2
+            spark_conf:
+              spark.databricks.delta.optimizeWrite.enabled: "true"
+      tasks:
+        - task_key: autoloader_bronze
+          job_cluster_key: ingest_cluster
+          spark_python_task:
+            python_file: ../src/bronze/autoloader_ingest.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --source-path
+              - ${var.bronze_path}
+              - --checkpoint-path
+              - ${var.checkpoint_path}
+
+    silver_transform:
+      name: claude-code-silver-transform
+      max_concurrent_runs: 1
+      trigger:
+        periodic:
+          interval: 15
+          unit: MINUTES
+      job_clusters:
+        - job_cluster_key: transform_cluster
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 2
+      tasks:
+        - task_key: normalize_events
+          job_cluster_key: transform_cluster
+          spark_python_task:
+            python_file: ../src/silver/normalize_events.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+
+    gold_aggregate:
+      name: claude-code-gold-aggregate
+      schedule:
+        quartz_cron_expression: "0 0 * * * ?"
+        timezone_id: UTC
+      job_clusters:
+        - job_cluster_key: transform_cluster
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 2
+      tasks:
+        - task_key: daily_usage
+          job_cluster_key: transform_cluster
+          spark_python_task:
+            python_file: ../src/gold/daily_usage.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+        - task_key: sync_snowflake
+          depends_on:
+            - task_key: daily_usage
+          job_cluster_key: transform_cluster
+          spark_python_task:
+            python_file: ../src/gold/sync_to_snowflake.py
+            parameters:
+              - --catalog
+              - ${var.catalog}

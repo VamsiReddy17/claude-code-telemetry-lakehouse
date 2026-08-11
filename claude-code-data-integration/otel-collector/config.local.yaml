@@ -1,0 +1,45 @@
+# Local/dev collector: OTLP → JSONL file (no Azure required)
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+  attributes/enrich:
+    actions:
+      - key: org.id
+        value: ${env:ORG_ID}
+        action: upsert
+      - key: pipeline.environment
+        value: ${env:ENVIRONMENT}
+        action: upsert
+
+exporters:
+  file/bronze:
+    path: /var/otel/fallback/claude-code-otel.jsonl
+    rotation:
+      max_megabytes: 50
+      max_days: 2
+  debug:
+    verbosity: basic
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [attributes/enrich, batch]
+      exporters: [file/bronze, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]

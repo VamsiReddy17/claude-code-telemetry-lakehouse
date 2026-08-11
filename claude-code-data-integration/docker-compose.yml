@@ -1,0 +1,32 @@
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.33.0
+    profiles: ["azure"]
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data
+    ports:
+      - "10000:10000"
+    volumes:
+      - azurite_data:/data
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    env_file:
+      - .env
+    environment:
+      ORG_ID: ${ORG_ID:-local-dev}
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-}
+      AZURE_STORAGE_CONTAINER: ${AZURE_STORAGE_CONTAINER:-claude-telemetry}
+      ADLS_BRONZE_PREFIX: ${ADLS_BRONZE_PREFIX:-bronze/otel/logs}
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "13133:13133"
+    volumes:
+      # Default: local file sink. Swap to config.yaml for ADLS exporter.
+      - ./otel-collector/config.local.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - ./otel-collector/local-file-fallback:/var/otel/fallback
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+
+volumes:
+  azurite_data:

@@ -1,0 +1,32 @@
+# Databricks Asset Bundle — Claude Code telemetry
+bundle:
+  name: claude-code-telemetry
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog name
+    default: claude_telemetry
+  bronze_path:
+    description: ADLS Autoloader source
+    default: abfss://claude-telemetry@stgclaudetelemdev.dfs.core.windows.net/bronze/otel/logs
+  checkpoint_path:
+    default: abfss://claude-telemetry@stgclaudetelemdev.dfs.core.windows.net/_checkpoints/bronze_otel
+  environment:
+    default: dev
+
+targets:
+  dev:
+    default: true
+    workspace:
+      host: ${DATABRICKS_HOST}
+    variables:
+      catalog: claude_telemetry_dev
+  prod:
+    workspace:
+      host: ${DATABRICKS_HOST}
+    variables:
+      catalog: claude_telemetry
+      environment: prod

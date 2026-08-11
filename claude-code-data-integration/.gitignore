@@ -1,0 +1,10 @@
+.env
+**/.env
+**/__pycache__/
+**/.DS_Store
+otel-collector/local-file-fallback/*
+!otel-collector/local-file-fallback/.gitkeep
+*.tfstate
+*.tfstate.*
+.terraform/
+.databricks/

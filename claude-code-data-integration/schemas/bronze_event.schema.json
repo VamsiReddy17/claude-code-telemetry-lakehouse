@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ClaudeCodeOtelLogRecord",
+  "description": "Normalized bronze contract for Claude Code OTel log events after collector enrich.",
+  "type": "object",
+  "required": ["event_name", "event_timestamp", "session_id", "org_id"],
+  "properties": {
+    "org_id": { "type": "string" },
+    "pipeline_environment": { "type": "string" },
+    "event_name": {
+      "type": "string",
+      "enum": [
+        "user_prompt",
+        "assistant_response",
+        "api_request",
+        "api_error",
+        "api_request_body",
+        "api_response_body",
+        "tool_result",
+        "tool_decision",
+        "session_start",
+        "other"
+      ]
+    },
+    "event_timestamp": { "type": "string", "format": "date-time" },
+    "event_sequence": { "type": ["integer", "null"] },
+    "session_id": { "type": "string" },
+    "prompt_id": { "type": ["string", "null"] },
+    "message_uuid": { "type": ["string", "null"] },
+    "user_account_uuid": { "type": ["string", "null"] },
+    "user_email": { "type": ["string", "null"] },
+    "app_version": { "type": ["string", "null"] },
+    "model": { "type": ["string", "null"] },
+    "prompt_text": { "type": ["string", "null"] },
+    "prompt_length": { "type": ["integer", "null"] },
+    "response_text": { "type": ["string", "null"] },
+    "response_length": { "type": ["integer", "null"] },
+    "tool_name": { "type": ["string", "null"] },
+    "tool_input": { "type": ["string", "null"] },
+    "tool_output": { "type": ["string", "null"] },
+    "input_tokens": { "type": ["integer", "null"] },
+    "output_tokens": { "type": ["integer", "null"] },
+    "cache_read_tokens": { "type": ["integer", "null"] },
+    "cache_creation_tokens": { "type": ["integer", "null"] },
+    "cost_usd": { "type": ["number", "null"] },
+    "raw_attributes": { "type": "object" },
+    "ingest_ts": { "type": "string", "format": "date-time" },
+    "source_blob_path": { "type": ["string", "null"] }
+  }
+}

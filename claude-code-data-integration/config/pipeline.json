@@ -1,0 +1,34 @@
+{
+  "pipeline": {
+    "name": "claude-code-telemetry",
+    "org_id": "acme-corp",
+    "medallion": ["bronze", "silver", "gold"]
+  },
+  "sources": {
+    "claude_code_otel": {
+      "protocol": "otlp",
+      "events": [
+        "user_prompt",
+        "assistant_response",
+        "tool_result",
+        "tool_decision",
+        "api_request",
+        "api_error"
+      ]
+    }
+  },
+  "sinks": {
+    "adls_gen2": {
+      "container": "claude-telemetry",
+      "bronze_prefix": "bronze/otel/logs"
+    },
+    "databricks": {
+      "catalog": "claude_telemetry",
+      "schemas": ["bronze", "silver", "gold"]
+    },
+    "snowflake": {
+      "database": "CLAUDE_TELEMETRY",
+      "schemas": ["BRONZE", "SILVER", "GOLD"]
+    }
+  }
+}
