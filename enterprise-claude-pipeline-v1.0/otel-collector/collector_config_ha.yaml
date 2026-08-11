@@ -1,0 +1,74 @@
+# High-Availability OpenTelemetry Collector Configuration
+# Designed for 2,500 Claude Code Developers emitting ~1.5M telemetry events/day
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        max_concurrent_streams: 1024
+        read_buffer_size: 10485760 # 10MB buffer
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+  batch:
+    send_batch_size: 1000
+    timeout: 5s
+    send_batch_max_size: 2000
+
+  resourcedetection:
+    detectors: [env, azure]
+    timeout: 2s
+
+  transform:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["ingestion_time"], Now())
+          - set(attributes["collector_instance"], "otel-ha-node-01")
+
+exporters:
+  # Primary Exporter: ADLS Gen2 Azure Blob Exporter (JSONL Gzip)
+  azureblob:
+    account_name: "${AZURE_STORAGE_ACCOUNT}"
+    container: "claude-telemetry"
+    blob_name_format: "raw/logs/year=%Y/month=%m/day=%d/hour=%H/collector_${POD_NAME}_%{uuid}.jsonl.gz"
+    format: "json"
+    compression: "gzip"
+    auth_type: "managed_identity"
+    buffer:
+      max_size_mb: 256
+      flush_interval: 10s
+
+  # Secondary Backup Exporter: Local Persistent Fallback Buffer (Disk Queue)
+  file:
+    path: "/var/log/otel/fallback_telemetry_%Y%m%d_%H.jsonl"
+    flush_interval: 5s
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, transform]
+      exporters: [azureblob]
+  telemetry:
+    logs:
+      level: "info"
+    metrics:
+      address: "0.0.0.0:8888"

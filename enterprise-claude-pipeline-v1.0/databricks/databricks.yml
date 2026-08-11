@@ -1,0 +1,82 @@
+# Databricks Asset Bundle (DAB) for Enterprise Claude Code Telemetry Pipeline
+bundle:
+  name: claude-code-enterprise-telemetry
+
+resources:
+  jobs:
+    claude_telemetry_medallion_pipeline:
+      name: "[Production] Claude Code Telemetry Medallion Pipeline"
+      description: "Continuous streaming and scheduled batch pipeline for 2,500 Claude Code developers"
+      
+      schedule:
+        quartz_cron_expression: "0 0/15 * * * ?" # Run every 15 minutes
+        timezone_id: "UTC"
+        pause_status: "UNPAUSED"
+
+      email_notifications:
+        on_failure:
+          - "data-engineering-alerts@enterprise.corp"
+        on_duration_warning_threshold_exceeded:
+          - "data-architect@enterprise.corp"
+
+      job_clusters:
+        - job_cluster_key: "telemetry_etl_cluster"
+          new_cluster:
+            spark_version: "14.3.x-scala2.12"
+            azure_attributes:
+              first_on_demand: 1
+              availability: "SPOT_WITH_FALLBACK_AZURE"
+            node_type_id: "Standard_D8s_v5"
+            num_workers: 4
+            spark_conf:
+              "spark.master": "local[*]"
+              "spark.sql.shuffle.partitions": "16"
+              "spark.databricks.delta.preview.enabled": "true"
+              "spark.databricks.delta.schema.autoMerge.enabled": "true"
+
+      tasks:
+        # Task 1: Auto Loader Bronze Ingestion
+        - task_key: "bronze_autoloader_ingest"
+          job_cluster_key: "telemetry_etl_cluster"
+          spark_python_task:
+            python_file: "src/01_bronze_autoloader.py"
+          timeout_seconds: 1800
+
+        # Task 2: Silver Transformation & PII/Secret Redaction
+        - task_key: "silver_transform_and_redact"
+          depends_on:
+            - task_key: "bronze_autoloader_ingest"
+          job_cluster_key: "telemetry_etl_cluster"
+          spark_python_task:
+            python_file: "src/02_silver_transformation_pii_redact.py"
+          timeout_seconds: 1800
+
+        # Task 3: Gold Metrics Aggregations
+        - task_key: "gold_metrics_aggregations"
+          depends_on:
+            - task_key: "silver_transform_and_redact"
+          job_cluster_key: "telemetry_etl_cluster"
+          spark_python_task:
+            python_file: "src/03_gold_aggregations.py"
+          timeout_seconds: 1800
+
+        # Task 4: Sync Gold to Snowflake
+        - task_key: "snowflake_gold_sync"
+          depends_on:
+            - task_key: "gold_metrics_aggregations"
+          job_cluster_key: "telemetry_etl_cluster"
+          spark_python_task:
+            python_file: "src/04_snowflake_delta_sync.py"
+          timeout_seconds: 1800
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: "https://adb-dev.azuredatabricks.net"
+
+  prod:
+    mode: production
+    workspace:
+      host: "https://adb-prod.azuredatabricks.net"
