@@ -14,9 +14,11 @@
 2. For LLM ingestion / RAG, prefer `llms-full.txt` or individual `docs/en/**/*.md` files.
 3. Re-fetch everything with: `python3 scripts/fetch_docs.py` then `python3 scripts/build_index.py`.
 4. Each page has YAML frontmatter with `title`, `source`, `html`, and `summary`.
+5. Curated supplements (not in the official Code docs index): [`guides/`](guides/).
 
 ## Table of contents
 
+- [Curated guides](#curated-guides)
 - [Getting started](#getting-started)
 - [Surfaces & platforms](#surfaces-platforms)
 - [Agents & parallel work](#agents-parallel-work)
@@ -29,6 +31,18 @@
 - [Reference](#reference)
 - [Agent SDK](#agent-sdk)
 - [What's new](#what-s-new)
+
+---
+
+## Curated guides
+
+_Supplements not present in the official `docs/en/` mirror — see [`guides/README.md`](guides/README.md)._
+
+- [Enterprise Inference Hooks — overview](guides/enterprise-inference-hooks/01_overview_and_concepts.md) — Pre-inference DLP webhooks (Claude Enterprise only)
+- [Enterprise Inference Hooks — setup](guides/enterprise-inference-hooks/02_configuration_and_setup.md) — Admin console, Standard Webhooks, shadow mode
+- [Enterprise Inference Hooks — schema & verdicts](guides/enterprise-inference-hooks/03_webhook_schema_and_verdicts.md) — Payload visibility, allow/deny JSON
+- [Enterprise Inference Hooks — failure handling](guides/enterprise-inference-hooks/04_failure_handling_and_best_practices.md) — Fail open vs fail closed
+- [Governance defense-in-depth](guides/governance-defense-in-depth.md) — SDK permissions × Inference Hooks × OTel matrix
 
 ---
 

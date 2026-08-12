@@ -14,6 +14,7 @@ Offline mirror of Anthropic's Claude Code documentation.
 |-------|-------------|
 | [`INDEX.md`](INDEX.md) | Categorized navigation of every page |
 | [`docs/en/`](docs/en/) | Full markdown for each documentation page |
+| [`guides/`](guides/) | Curated supplements (e.g. Enterprise Inference Hooks) not in the Code docs mirror |
 | [`llms.txt`](llms.txt) | Official page index |
 | [`llms-full.txt`](llms-full.txt) | Official concatenated corpus |
 | [`manifest.json`](manifest.json) | Machine-readable map of fetched pages |
